@@ -61,3 +61,22 @@ Konsep hot reload flutter adalah memperbarui tampilan aplikasi secara langsung t
 saat pengembang mengubah kode nanti flutter hanya memuat ulang bagian kode yang berubah saat aplikasi sedang berjalan sehingga
 perubahan dapat langsung dilihat. Berbeda sekali denganhot restart dimana kita harus memulai ulang program dari awal dan menghapus semua
 state yang disimpan pada aplikasi sehingga data sementara seperti variabel input dan misalnya posisi halaman tidak tersimpan.
+
+# Tugas 8
+
+# 1. Jelaskan perbedaan antara Navigator.push() dan Navigator.pushReplacement() pada Flutter. Dalam kasus apa sebaiknya masing-masing digunakan pada aplikasi Football Shop kamu?
+
+Gampangnya push itu kayak mendorong halaman baru ke sebuah stack sehingga kita masih bisa kembali ke halaman sebelumnya dengan pop
+sedangkan pushreplacement kita membuat stack baru lalu mendorong halaman baru ke stack tersebut. Kasusnya menggunakan push hanya jika
+kita memiliki semacam tombol back yang mengembalikan kita ke halaman sebelumnya tetapi jika tidak ada tombol tersebut gunakan push replacement
+saja agar stack tidak berlebih isinya
+
+# 2. Bagaimana kamu memanfaatkan hierarchy widget seperti Scaffold, AppBar, dan Drawer untuk membangun struktur halaman yang konsisten di seluruh aplikasi?
+
+Pertama tentu saja menggunakan material app agar halaman bisa tampil pada layar, kemudian menggunakan scaffold yang disini berfungsi untuk membentuk
+struktur halaman dari atas ke bawah dengan struktur appbar, body, dan tambahan lainnya. Appbar kita gunakan untuk membentuk semacam navbar yang
+memiliki logo dan identitas toko, kemudian dengan drawer saya meletakkan pada left_drawer.dart untuk widget drawer yang dimana akan membentuk tombol 
+di sebelah kiri appbar yang menampilkan semacam menu samping untuk aplikasi mobile.
+
+# 3. Dalam konteks desain antarmuka, apa kelebihan menggunakan layout widget seperti Padding, SingleChildScrollView, dan ListView saat menampilkan elemen-elemen form? Berikan contoh penggunaannya dari aplikasi kamu.
+

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:football_shop/buy.dart';
+import 'package:football_shop/widgets/left_drawer.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({required theme,super.key});
@@ -14,9 +16,10 @@ class HomePage extends StatelessWidget {
               height: 50,
             ),
         ),
-        backgroundColor: Colors.blue[400],
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
-      body: Center(
+        drawer: LeftDrawer(),
+        body: Center(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -59,6 +62,9 @@ class HomePage extends StatelessWidget {
                     duration: Duration(seconds: 3),
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => const ShoppingPage()));
                 },
                   icon: ImageIcon(
                     AssetImage('images/ref.png'),
@@ -74,3 +80,5 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+
+
