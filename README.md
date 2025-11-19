@@ -244,3 +244,261 @@ Flutter menerima respon tersebut, mengubahnya menjadi objek model Dart, menyimpa
 Pada login dan register flutter mengirim username dan password ke DJango kemudian django memanggil fungsi pada views.py yang mengatur hal tersebut, jika benar maka django membuat session dan mengirim cookie session ke flutter.
 CookieRequest akan menyimpan cookie itu sehingga setiap request berikutnya otomatis membawa cookie untuk autentikasi. Logout dilakukan dengan memanggil fungsi logout django, dimana django menghapus session dan cookierequest membersihkan cookie.
 # 7. Jelaskan bagaimana cara kamu mengimplementasikan checklist di atas secara step-by-step! (bukan hanya sekadar mengikuti tutorial).
+
+Pertama saya membuat model pada Django sesuai kebutuhan aplikasi, kemudian menyiapkan fungsi view untuk mengambil dan membuat data dalam bentuk JSON. Setelah itu saya mengatur ALLOWED_HOSTS, CORS, dan pengaturan cookie/CSRF agar Flutter dapat terhubung ke Django tanpa ditolak oleh server. Saya juga membuat endpoint login, register, dan logout pada views.py yang mengatur autentikasi menggunakan fungsi bawaan Django.
+
+saya juga menambahkan dependency http, provider, dan pbp_django_auth, lalu menyiapkan CookieRequest sebagai instance global melalui Provider agar status login dan cookie dapat diakses semua halaman. 
+
+Selanjutnya saya membuat model Dart yang mencerminkan struktur JSON Django supaya data mudah dipetakan dan aman dari error tipe dengan cara mengambil data JSON dari django saya lalu diconvert menjadi dart dengan quicktype, sehingga menjadi
+// To parse this JSON data, do
+//
+//     final newsEntry = newsEntryFromJson(jsonString);
+
+import 'dart:convert';
+
+List<NewsEntry> newsEntryFromJson(String str) => List<NewsEntry>.from(json.decode(str).map((x) => NewsEntry.fromJson(x)));
+
+String newsEntryToJson(List<NewsEntry> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
+
+class NewsEntry {
+  String id;
+  String name;
+  String description;
+  String category;
+  int price;
+  String thumbnail;
+  int sold;
+  bool isHot;
+  String username;
+  bool isOwner;
+
+  NewsEntry({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.category,
+    required this.price,
+    required this.thumbnail,
+    required this.sold,
+    required this.isHot,
+    required this.username,
+    required this.isOwner,
+  });
+
+  factory NewsEntry.fromJson(Map<String, dynamic> json) => NewsEntry(
+    id: json["id"],
+    name: json["name"],
+    description: json["description"],
+    category: json["category"],
+    price: json["price"],
+    thumbnail: json["thumbnail"],
+    sold: json["sold"],
+    isHot: json["is_hot"],
+    username: json["username"],
+    isOwner: json["is_owner"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "name": name,
+    "description": description,
+    "category": category,
+    "price": price,
+    "thumbnail": thumbnail,
+    "sold": sold,
+    "is_hot": isHot,
+    "username": username,
+    "is_owner": isOwner,
+  };
+}
+
+Setelah itu saya membuat halaman login dan register yang mengirim data ke Django melalui CookieRequest, serta halaman list yang menampilkan data dengan memanggil endpoint Django dan mengonversi JSON ke model Dart.
+
+contoh:
+
+import 'package:football_shop/menu.dart';
+import 'package:flutter/material.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:football_shop/register.dart';
+
+void main() {
+  runApp(const LoginApp());
+}
+
+class LoginApp extends StatelessWidget {
+  const LoginApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Login',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.blue)
+            .copyWith(secondary: Colors.blueAccent[400]),
+      ),
+      home: const LoginPage(),
+    );
+  }
+}
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    final request = context.watch<CookieRequest>();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Login'),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Login',
+                    style: TextStyle(
+                      fontSize: 24.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 30.0),
+                  TextField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      hintText: 'Enter your username',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                      ),
+                      contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                    ),
+                  ),
+                  const SizedBox(height: 12.0),
+                  TextField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      hintText: 'Enter your password',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                      ),
+                      contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                    ),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 24.0),
+                  ElevatedButton(
+                    onPressed: () async {
+                      String username = _usernameController.text;
+                      String password = _passwordController.text;
+
+                      // Check credentials
+                      // TODO: Change the URL and don't forget to add trailing slash (/) at the end of URL!
+                      // To connect Android emulator with Django on localhost, use URL http://10.0.2.2/
+                      // If you using chrome,  use URL http://localhost:8000
+                      final response = await request
+                          .login("http://localhost:8000/auth/login/", {
+                        'username': username,
+                        'password': password,
+                      });
+
+                      if (request.loggedIn) {
+                        String message = response['message'];
+                        String uname = response['username'];
+                        if (context.mounted) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => HomePage(theme: ColorScheme.fromSwatch(primarySwatch: Colors.blue)
+                                    .copyWith(secondary: Colors.blueAccent[400]))),
+                          );
+                          ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              SnackBar(
+                                  content:
+                                  Text("$message Welcome, $uname.")),
+                            );
+                        }
+                      } else {
+                        if (context.mounted) {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Login Failed'),
+                              content: Text(response['message']),
+                              actions: [
+                                TextButton(
+                                  child: const Text('OK'),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      minimumSize: Size(double.infinity, 50),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    ),
+                    child: const Text('Login'),
+                  ),
+                  const SizedBox(height: 36.0),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RegisterPage(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Don\'t have an account? Register',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: 16.0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+untuk register, dan log out sama saja hanya memanggil url django yang berbeda
+
+Untuk pengiriman data baru, saya membuat form Flutter yang mengambil input user, memvalidasi, lalu mengirimkannya sebagai JSON ke endpoint Django. Django menyimpan data tersebut dan mengembalikan respon, lalu Flutter memperbarui tampilan berdasarkan respon itu. Terakhir, saya hanya menambahkan saja semua hal yang baru ke drawer dengan menambahkan listtile pada left_drawer.dart dan listtile tersebut akan memanggil halaman yang spesifik
