@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:football_shop/widgets/left_drawer.dart';
+import 'dart:convert';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:football_shop/menu.dart';
 
 class ShoppingPage extends StatefulWidget {
   const ShoppingPage({super.key});
@@ -27,11 +31,12 @@ class _ShoppingPageState extends State<ShoppingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final request = context.watch<CookieRequest>();
     return Scaffold(
       appBar: AppBar(
         title: const Center(
           child: Text(
-            'Add News Form',
+            'Add Products Form',
           ),
         ),
         backgroundColor: Colors.indigo,
@@ -192,41 +197,42 @@ class _ShoppingPageState extends State<ShoppingPage> {
                           backgroundColor:
                           WidgetStatePropertyAll(Colors.cyanAccent),
                         ),
-                        onPressed: () {
+                        onPressed: () async {
                           if (_formKey.currentState!.validate()) {
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: const Text('Produk berhasil tersimpan'),
-                                  content: SingleChildScrollView(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                      children: [
-                                        Text('Name: $_title'),
-                                        Text('Price: $_price'),
-                                        Text('Description: $_content'),
-                                        Text('Category: $_category'),
-                                        Text('Thumbnail: $_thumbnail'),
-                                        Text(
-                                            'Is Featured: ${_isFeatured ? "Ya" : "Tidak"}'),
-                                      ],
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      child: const Text('OK'),
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        _formKey.currentState!.reset();
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
+                            // TODO: Replace the URL with your app's URL
+                            // To connect Android emulator with Django on localhost, use URL http://10.0.2.2/
+                            // If you using chrome,  use URL http://localhost:8000
 
+                            final response = await request.postJson(
+                              "http://localhost:8000/create-flutter/",
+                              jsonEncode({
+                                "title": _title,
+                                "content": _content,
+                                "thumbnail": _thumbnail,
+                                "category": _category,
+                                "price": _price,
+                                "is_featured": _isFeatured,
+                              }),
+                            );
+                            if (context.mounted) {
+                              if (response['status'] == 'success') {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(const SnackBar(
+                                  content: Text("Products successfully saved!"),
+                                ));
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => HomePage(theme: ColorScheme.fromSwatch(primarySwatch: Colors.blue)
+                                          .copyWith(secondary: Colors.blueAccent[400])),
+                                ));
+                              } else {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(const SnackBar(
+                                  content: Text("Something went wrong, please try again."),
+                                ));
+                              }
+                            }
                           }
                         },
                         child: const Text(
